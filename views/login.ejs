@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in | Online Voting Platform</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+  </head>
+  <body class="bg-black grid place-items-center h-screen">
+    <div
+      class="text-white w-1/3 rounded-xl p-5 shadow-xl shadow-white border border-gray-300/50"
+    >
+      <p
+        class="text-center bg-gradient-to-r from-purple-600 to-pink-600 text-4xl font-extrabold bg-clip-text text-transparent pb-2"
+      >
+        Online voting platform
+      </p>
+      <p
+        class="text-center text-4xl font-extrabold bg-clip-text text-white pb-2"
+      >
+        Sign In
+      </p>
+      <form class="flex flex-col gap-4" action="/session" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="text-white">
+          <label class="font-semibold" for="email">Email</label>
+          <input
+            type="email"
+            name="email"
+            id="email"
+            class="border border-gray-300/50 rounded p-2 w-full bg-gray-300/10 shadow-xl shadow-gray-300/30"
+          />
+        </div>
+        <div class="text-white">
+          <label class="font-semibold" for="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            class="border border-gray-300/50 rounded p-2 w-full bg-gray-300/10 shadow-xl shadow-gray-300/30"
+          />
+        </div>
+        <button
+          class="self-center w-1/4 transition ease-linear delay-150 font-sans text-lg rounded border border-white p-2 text-white hover:bg-white hover:text-black shadow-xl shadow-white/20"
+          type="submit"
+        >
+          Sign in
+        </button>
+      </form>
+      <ul>
+        <% if(messages && messages.error && messages.error.length > 0)  { %>
+          <% for(var i=0; i<messages.error.length; i++) { %>
+                  <li class="my-2 p-2 text-red-500 border border-red-500 bg-red-50 rounded"><%= messages.error[i] %></li>
+          <% } %>
+        <% } %>        
+      </ul>
+      <p
+        class="mt-4 text-center text-white text-lg bg-clip-text pb-2 text-gray-500"
+      >
+        New User?
+        <a class="underline hover:text-white" href="/signup">Sign up here</a>
+      </p>
+    </div>
+  </body>
+</html>

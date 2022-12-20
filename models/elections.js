@@ -18,6 +18,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "electionId",
       });
     }
+    static created(userId) {
+      return this.findAll({
+        userId,
+      });
+    }
   }
   Elections.init(
     {
