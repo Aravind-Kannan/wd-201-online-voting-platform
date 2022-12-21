@@ -44,6 +44,7 @@ app.use(passport.session());
 
 // NOTE for authenticating user credentials
 passport.use(
+  "administrator",
   new LocalStrategy(
     {
       usernameField: "email",
@@ -128,7 +129,7 @@ app.get(
 
 app.post(
   "/session",
-  passport.authenticate("local", {
+  passport.authenticate("administrator", {
     failureRedirect: "/login",
     failureFlash: true,
   }),
@@ -444,6 +445,27 @@ app.delete(
     try {
       await Voters.remove(request.params.id, request.params.eid);
       return response.json({ success: true });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.get(
+  "/elections/:id/preview",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const election = await Elections.findByPk(request.params.id, {
+        include: [{ model: Questions, include: Options }, { model: Voters }],
+      });
+      console.log(JSON.stringify(election, null, 2));
+      return response.render("preview", {
+        csrfToken: request.csrfToken(),
+        user: request.user,
+        election,
+      });
     } catch (error) {
       console.log(error);
       return response.status(422).json(error);
