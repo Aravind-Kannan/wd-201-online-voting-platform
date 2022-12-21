@@ -12,6 +12,21 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "electionId",
       });
     }
+    static createVoter(voterId, password, electionId) {
+      return this.create({
+        voterId,
+        password,
+        electionId,
+      });
+    }
+    static async remove(id, electionId) {
+      return this.destroy({
+        where: {
+          id,
+          electionId,
+        },
+      });
+    }
   }
   Voters.init(
     {

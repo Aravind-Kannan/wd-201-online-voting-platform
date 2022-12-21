@@ -112,6 +112,26 @@
             console.error(err);
           });
       }
+
+      function deleteVoter(id) {
+        fetch(`/elections/<%= election.id %>/voters/${id}`, {
+          method: "delete",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            _csrf: token,
+          }),
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
     </script>
   </head>
   <body class="bg-black grid place-items-center h-screen">
@@ -123,117 +143,163 @@
         <%= user.firstName + " " + user.lastName %>
         <a href="/signout">Sign out</a>
       </p>
-      <p>Questions</p>
-      <form action="/elections/<%= election.id %>/questions" method="post">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <div class="flex py-4 gap-2">
-          <div class="flex-auto">
-            <input
-              name="title"
-              class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
-              type="text"
-              placeholder="Enter question title"
-              required
-            />
+      <div>
+        <p>Questions</p>
+        <form action="/elections/<%= election.id %>/questions" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div class="flex py-4 gap-2">
+            <div class="flex-auto">
+              <input
+                name="title"
+                class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+                type="text"
+                placeholder="Enter question title"
+                required
+              />
+            </div>
+            <div class="flex-auto">
+              <input
+                name="description"
+                class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+                type="text"
+                placeholder="Enter question description"
+                required
+              />
+            </div>
+            <div class="flex-none">
+              <button
+                class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
+                type="submit"
+              >
+                Add
+              </button>
+            </div>
           </div>
-          <div class="flex-auto">
-            <input
-              name="description"
-              class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
-              type="text"
-              placeholder="Enter question description"
-              required
-            />
-          </div>
-          <div class="flex-none">
-            <button
-              class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
-              type="submit"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      </form>
-      <ul>
-        <% for(let i = 0; i < election.Questions.length; i++) { %>
-        <li>
-          <div>
-            <input
-              type="text"
-              value="<%= election.Questions[i].title %>"
-              id="question-title-<%= election.Questions[i].id %>"
-            />
-            <input
-              type="text"
-              value="<%= election.Questions[i].description %>"
-              id="question-description-<%= election.Questions[i].id %>"
-            />
-            <a
-              href="#"
-              onClick="updateQuestion(<%= election.Questions[i].id %>)"
-              >Edit</a
-            >
-            <a
-              href="#"
-              onClick="deleteQuestion(<%= election.Questions[i].id %>)"
-              >Delete</a
-            >
-          </div>
-          <div>
-            <form
-              action="/elections/<%= election.id %>/questions/<%= election.Questions[i].id %>/options"
-              method="post"
-            >
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-              <div class="flex py-4 gap-2">
-                <div class="flex-auto">
-                  <input
-                    name="title"
-                    class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
-                    type="text"
-                    placeholder="Enter option title"
-                    required
-                  />
+        </form>
+        <ul>
+          <% for(let i = 0; i < election.Questions.length; i++) { %>
+          <li>
+            <div>
+              <input
+                type="text"
+                value="<%= election.Questions[i].title %>"
+                id="question-title-<%= election.Questions[i].id %>"
+              />
+              <input
+                type="text"
+                value="<%= election.Questions[i].description %>"
+                id="question-description-<%= election.Questions[i].id %>"
+              />
+              <a
+                href="#"
+                onClick="updateQuestion(<%= election.Questions[i].id %>)"
+                >Edit</a
+              >
+              <a
+                href="#"
+                onClick="deleteQuestion(<%= election.Questions[i].id %>)"
+                >Delete</a
+              >
+            </div>
+            <div>
+              <form
+                action="/elections/<%= election.id %>/questions/<%= election.Questions[i].id %>/options"
+                method="post"
+              >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <div class="flex py-4 gap-2">
+                  <div class="flex-auto">
+                    <input
+                      name="title"
+                      class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+                      type="text"
+                      placeholder="Enter option title"
+                      required
+                    />
+                  </div>
+                  <div class="flex-none">
+                    <button
+                      class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
+                      type="submit"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
-                <div class="flex-none">
-                  <button
-                    class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
-                    type="submit"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            </form>
-            <ul>
-              <% for(let j = 0; j < election.Questions[i].Options.length; j++) {
-              %>
-              <li>
-                <div>
-                  <input
-                    type="text"
-                    value="<%= election.Questions[i].Options[j].title %>"
-                    id="question-title-<%= election.Questions[i].Options[j].id %>"
-                  />
-                  <a
-                    href="#"
-                    onClick="updateQuestion(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
-                    >Edit</a
-                  >
-                  <a
-                    href="#"
-                    onClick="deleteQuestion(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
-                    >Delete</a
-                  >
-                </div>
-              </li>
-              <% } %>
-            </ul>
+              </form>
+              <ul>
+                <% for(let j = 0; j < election.Questions[i].Options.length; j++)
+                { %>
+                <li>
+                  <div>
+                    <input
+                      type="text"
+                      value="<%= election.Questions[i].Options[j].title %>"
+                      id="question-title-<%= election.Questions[i].Options[j].id %>"
+                    />
+                    <a
+                      href="#"
+                      onClick="updateQuestion(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
+                      >Edit</a
+                    >
+                    <a
+                      href="#"
+                      onClick="deleteQuestion(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
+                      >Delete</a
+                    >
+                  </div>
+                </li>
+                <% } %>
+              </ul>
+            </div>
+          </li>
+          <% } %>
+        </ul>
+      </div>
+      <div>
+        <p>Voters</p>
+        <form action="/elections/<%= election.id %>/voters" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div class="flex py-4 gap-2">
+            <div class="flex-auto">
+              <input
+                name="voterId"
+                class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+                type="text"
+                placeholder="Enter voderId"
+                required
+              />
+              <input
+                name="password"
+                class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+                type="password"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+            <div class="flex-none">
+              <button
+                class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
+                type="submit"
+              >
+                Add
+              </button>
+            </div>
           </div>
-        </li>
-        <% } %>
-      </ul>
+        </form>
+        <ul>
+          <% for(let i = 0; i < election.Voters.length; i++) { %>
+          <li>
+            <div>
+              <p><%= election.Voters[i].voterId %></p>
+              <a href="#" onClick="deleteVoter(<%= election.Voters[i].id %>)"
+                >Delete</a
+              >
+            </div>
+          </li>
+          <% } %>
+        </ul>
+      </div>
     </div>
   </body>
 </html>

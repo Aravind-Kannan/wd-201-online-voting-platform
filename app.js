@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 
 // NOTE import data models
-const { Users, Elections, Questions, Options } = require("./models");
+const { Users, Elections, Questions, Options, Voters } = require("./models");
 
 // NOTE middleware that only parses json and only looks at requests where the Content-Type header matches the type option
 const bodyParser = require("body-parser");
@@ -238,7 +238,7 @@ app.get(
   async (request, response) => {
     try {
       const election = await Elections.findByPk(request.params.id, {
-        include: { model: Questions, include: Options },
+        include: [{ model: Questions, include: Options }, { model: Voters }],
       });
       console.log(JSON.stringify(election, null, 2));
       return response.render("ballot", {
@@ -396,6 +396,53 @@ app.delete(
   async (request, response) => {
     try {
       await Options.remove(request.params.id, request.params.qid);
+      return response.json({ success: true });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+// NOTE Voters Resource
+app.get(
+  "/elections/:eid/voters/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const voter = await Voters.findByPk(request.params.id);
+      return response.json(voter);
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.post(
+  "/elections/:eid/voters",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Voters.createVoter(
+        request.body.voterId,
+        request.body.password,
+        request.params.eid
+      );
+      return response.redirect(`/elections/${request.params.eid}/ballot`);
+    } catch (error) {
+      console.log(error);
+      return response.redirect(`/elections/${request.params.eid}/ballot`);
+    }
+  }
+);
+
+app.delete(
+  "/elections/:eid/voters/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Voters.remove(request.params.id, request.params.eid);
       return response.json({ success: true });
     } catch (error) {
       console.log(error);
