@@ -12,6 +12,23 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "questionId",
       });
     }
+    static createOption(title, questionId) {
+      return this.create({
+        title,
+        questionId,
+      });
+    }
+    updateTitle(title) {
+      return this.update({ title });
+    }
+    static async remove(id, questionId) {
+      return this.destroy({
+        where: {
+          id,
+          questionId,
+        },
+      });
+    }
   }
   Options.init(
     {

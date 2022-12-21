@@ -12,7 +12,28 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "electionId",
       });
       Questions.hasMany(models.Options, {
-        foreignKey: "optionId",
+        foreignKey: "questionId",
+      });
+    }
+    static createQuestion(title, description, electionId) {
+      return this.create({
+        title,
+        description,
+        electionId,
+      });
+    }
+    updateTitle(title) {
+      return this.update({ title });
+    }
+    updateDescription(description) {
+      return this.update({ description });
+    }
+    static async remove(id, electionId) {
+      return this.destroy({
+        where: {
+          id,
+          electionId,
+        },
       });
     }
   }

@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 
 // NOTE import data models
-const { Users, Elections } = require("./models");
+const { Users, Elections, Questions, Options } = require("./models");
 
 // NOTE middleware that only parses json and only looks at requests where the Content-Type header matches the type option
 const bodyParser = require("body-parser");
@@ -118,7 +118,11 @@ app.get(
   async (request, response) => {
     const loggedInUser = request.user.id;
     const elections = await Elections.created(loggedInUser);
-    response.render("dashboard", { user: request.user, elections });
+    response.render("dashboard", {
+      user: request.user,
+      elections,
+      csrfToken: request.csrfToken(),
+    });
   }
 );
 
@@ -164,5 +168,240 @@ app.get("/signout", (request, response, next) => {
     response.redirect("/");
   });
 });
+
+// NOTE Elections Resource
+app.get(
+  "/elections/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const election = await Elections.findByPk(request.params.id);
+      return response.json(election);
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.post(
+  "/elections",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const loggedInUser = request.user.id;
+      await Elections.createElection(request.body.name, loggedInUser);
+      return response.redirect("/dashboard");
+    } catch (error) {
+      console.log(error);
+      return response.redirect("/dashboard");
+    }
+  }
+);
+
+app.put(
+  "/elections/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    const election = await Elections.findByPk(request.params.id);
+    console.log(request.body);
+    try {
+      if ("name" in request.body) {
+        let updatedElection = await election.updateName(request.body.name);
+        return response.json(updatedElection);
+      }
+      return response.status(422).json({ message: "Missing name property" });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.delete(
+  "/elections/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Elections.remove(request.params.id, request.user.id);
+      return response.json({ success: true });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.get(
+  "/elections/:id/ballot",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const election = await Elections.findByPk(request.params.id, {
+        include: { model: Questions, include: Options },
+      });
+      console.log(JSON.stringify(election, null, 2));
+      return response.render("ballot", {
+        csrfToken: request.csrfToken(),
+        user: request.user,
+        election,
+      });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+// NOTE Questions Resource
+app.get(
+  "/elections/:eid/questions/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const question = await Questions.findByPk(request.params.id);
+      return response.json(question);
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.post(
+  "/elections/:eid/questions",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Questions.createQuestion(
+        request.body.title,
+        request.body.description,
+        request.params.eid
+      );
+      return response.redirect(`/elections/${request.params.eid}/ballot`);
+    } catch (error) {
+      console.log(error);
+      return response.redirect(`/elections/${request.params.eid}/ballot`);
+    }
+  }
+);
+
+app.put(
+  "/elections/:eid/questions/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    const question = await Questions.findByPk(request.params.id);
+    console.log(request.body);
+    let updated = false,
+      updatedQuestion;
+    try {
+      if ("title" in request.body) {
+        updatedQuestion = await question.updateTitle(request.body.title);
+        updated = true;
+      }
+
+      if ("description" in request.body) {
+        updatedQuestion = await question.updateDescription(
+          request.body.description
+        );
+        updated = true;
+      }
+
+      if (updated) {
+        return response.json(updatedQuestion);
+      }
+
+      return response
+        .status(422)
+        .json({ message: "Missing title and description property" });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.delete(
+  "/elections/:eid/questions/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Questions.remove(request.params.id, request.params.eid);
+      return response.json({ success: true });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+// NOTE Options Resource
+app.get(
+  "/elections/:eid/questions/:qid/options/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const option = await Options.findByPk(request.params.id);
+      return response.json(option);
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.post(
+  "/elections/:eid/questions/:qid/options",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Options.createOption(request.body.title, request.params.qid);
+      return response.redirect(`/elections/${request.params.eid}/ballot`);
+    } catch (error) {
+      console.log(error);
+      return response.redirect(`/elections/${request.params.eid}/ballot`);
+    }
+  }
+);
+
+app.put(
+  "/elections/:eid/questions/:qid/options/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    const option = await Options.findByPk(request.params.id);
+    console.log(request.body);
+    let updated = false,
+      updatedOption;
+    try {
+      if ("title" in request.body) {
+        updatedOption = await option.updateTitle(request.body.title);
+        updated = true;
+      }
+
+      if (updated) {
+        return response.json(updatedOption);
+      }
+
+      return response.status(422).json({ message: "Missing title property" });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
+
+app.delete(
+  "/elections/:eid/questions/:qid/options/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Options.remove(request.params.id, request.params.qid);
+      return response.json({ success: true });
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
+  }
+);
 
 module.exports = app;

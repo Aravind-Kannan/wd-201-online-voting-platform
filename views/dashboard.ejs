@@ -4,22 +4,113 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
     <title>Dashboard | Online Voting Platform</title>
     <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <script>
+      const token = document
+        .querySelector(`meta[name="csrf-token"]`)
+        .getAttribute("content");
+
+      function updateElection(id) {
+        fetch(`/elections/${id}`, {})
+          .then((res) => res.json())
+          .then((election) => {
+            fetch(`/elections/${id}`, {
+              method: "put",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                _csrf: token,
+                ...election,
+                name: document.getElementById("elections-" + id).value,
+              }),
+            })
+              .then((res) => {
+                if (res.ok) {
+                  window.location.reload();
+                }
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          });
+      }
+
+      function deleteElection(id) {
+        fetch(`/elections/${id}`, {
+          method: "delete",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            _csrf: token,
+          }),
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+    </script>
   </head>
   <body class="bg-black grid place-items-center h-screen">
     <div
       class="text-white w-1/3 rounded-xl p-5 shadow-xl shadow-white border border-gray-300/50"
     >
       <p>Dashboard</p>
-      <p>Welcome, <%= user.firstName + " " + user.lastName %>!</p>
+      <p>
+        <%= user.firstName + " " + user.lastName %>
+        <a href="/signout">Sign out</a>
+      </p>
       <p>Elections</p>
+      <form action="/elections" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="flex py-4 gap-2">
+          <div class="flex-auto">
+            <input
+              name="name"
+              class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+              type="text"
+              placeholder="Enter election name"
+              required
+            />
+          </div>
+          <div class="flex-none">
+            <button
+              class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
+              type="submit"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </form>
       <ul>
         <% for(let i = 0; i < elections.length; i++) { %>
-        <li>elections[i].name</li>
+        <li>
+          <div>
+            <input
+              type="text"
+              value="<%= elections[i].name %>"
+              id="elections-<%= elections[i].id %>"
+            />
+            <a href="#" onClick="updateElection(<%= elections[i].id %>)"
+              >Edit</a
+            >
+            <a href="#" onClick="deleteElection(<%= elections[i].id %>)"
+              >Delete</a
+            >
+            <a href="/elections/<%= elections[i].id %>/ballot">Ballot</a>
+          </div>
+        </li>
         <% } %>
       </ul>
-      <a href="/signout">Sign out</a>
     </div>
   </body>
 </html>

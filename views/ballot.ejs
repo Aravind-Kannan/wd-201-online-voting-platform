@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
+    <title>Ballot | Online Voting Platform</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <script>
+      const token = document
+        .querySelector(`meta[name="csrf-token"]`)
+        .getAttribute("content");
+
+      function updateQuestion(id) {
+        fetch(`/elections/<%= election.id %>/questions/${id}`, {})
+          .then((res) => res.json())
+          .then((question) => {
+            fetch(`/elections/<%= election.id %>/questions/${id}`, {
+              method: "put",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                _csrf: token,
+                ...question,
+                title: document.getElementById("question-title-" + id).value,
+                description: document.getElementById(
+                  "question-description-" + id
+                ).value,
+              }),
+            })
+              .then((res) => {
+                if (res.ok) {
+                  window.location.reload();
+                }
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          });
+      }
+
+      function deleteQuestion(id) {
+        fetch(`/elections/<%= election.id %>/questions/${id}`, {
+          method: "delete",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            _csrf: token,
+          }),
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+
+      function updateOption(qid, id) {
+        fetch(
+          `/elections/<%= election.id %>/questions/${qid}/options/${id}`,
+          {}
+        )
+          .then((res) => res.json())
+          .then((option) => {
+            fetch(
+              `/elections/<%= election.id %>/questions/${qid}/options/${id}`,
+              {
+                method: "put",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  _csrf: token,
+                  ...option,
+                  title: document.getElementById("option-title-" + id).value,
+                }),
+              }
+            )
+              .then((res) => {
+                if (res.ok) {
+                  window.location.reload();
+                }
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          });
+      }
+
+      function deleteOption(qid, id) {
+        fetch(`/elections/<%= election.id %>/questions/${qid}/options/${id}`, {
+          method: "delete",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            _csrf: token,
+          }),
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+    </script>
+  </head>
+  <body class="bg-black grid place-items-center h-screen">
+    <div
+      class="text-white w-1/3 rounded-xl p-5 shadow-xl shadow-white border border-gray-300/50"
+    >
+      <p><%= election.name %></p>
+      <p>
+        <%= user.firstName + " " + user.lastName %>
+        <a href="/signout">Sign out</a>
+      </p>
+      <p>Questions</p>
+      <form action="/elections/<%= election.id %>/questions" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="flex py-4 gap-2">
+          <div class="flex-auto">
+            <input
+              name="title"
+              class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+              type="text"
+              placeholder="Enter question title"
+              required
+            />
+          </div>
+          <div class="flex-auto">
+            <input
+              name="description"
+              class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+              type="text"
+              placeholder="Enter question description"
+              required
+            />
+          </div>
+          <div class="flex-none">
+            <button
+              class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
+              type="submit"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </form>
+      <ul>
+        <% for(let i = 0; i < election.Questions.length; i++) { %>
+        <li>
+          <div>
+            <input
+              type="text"
+              value="<%= election.Questions[i].title %>"
+              id="question-title-<%= election.Questions[i].id %>"
+            />
+            <input
+              type="text"
+              value="<%= election.Questions[i].description %>"
+              id="question-description-<%= election.Questions[i].id %>"
+            />
+            <a
+              href="#"
+              onClick="updateQuestion(<%= election.Questions[i].id %>)"
+              >Edit</a
+            >
+            <a
+              href="#"
+              onClick="deleteQuestion(<%= election.Questions[i].id %>)"
+              >Delete</a
+            >
+          </div>
+          <div>
+            <form
+              action="/elections/<%= election.id %>/questions/<%= election.Questions[i].id %>/options"
+              method="post"
+            >
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="flex py-4 gap-2">
+                <div class="flex-auto">
+                  <input
+                    name="title"
+                    class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"
+                    type="text"
+                    placeholder="Enter option title"
+                    required
+                  />
+                </div>
+                <div class="flex-none">
+                  <button
+                    class="bg-green-600 text-white py-1 px-5 rounded font-medium mr-2 mb-1"
+                    type="submit"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </form>
+            <ul>
+              <% for(let j = 0; j < election.Questions[i].Options.length; j++) {
+              %>
+              <li>
+                <div>
+                  <input
+                    type="text"
+                    value="<%= election.Questions[i].Options[j].title %>"
+                    id="question-title-<%= election.Questions[i].Options[j].id %>"
+                  />
+                  <a
+                    href="#"
+                    onClick="updateQuestion(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
+                    >Edit</a
+                  >
+                  <a
+                    href="#"
+                    onClick="deleteQuestion(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
+                    >Delete</a
+                  >
+                </div>
+              </li>
+              <% } %>
+            </ul>
+          </div>
+        </li>
+        <% } %>
+      </ul>
+    </div>
+  </body>
+</html>

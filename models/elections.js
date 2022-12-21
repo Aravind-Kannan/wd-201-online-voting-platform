@@ -18,9 +18,28 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "electionId",
       });
     }
+    static createElection(name, userId) {
+      return this.create({
+        name,
+        userId,
+      });
+    }
     static created(userId) {
       return this.findAll({
-        userId,
+        where: {
+          userId,
+        },
+      });
+    }
+    updateName(name) {
+      return this.update({ name: name });
+    }
+    static async remove(id, userId) {
+      return this.destroy({
+        where: {
+          id,
+          userId,
+        },
       });
     }
   }
