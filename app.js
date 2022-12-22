@@ -57,9 +57,45 @@ passport.use(
         },
       })
         .then(async (user) => {
-          const result = await bcrypt.compare(password, user.password);
-          if (result) return done(null, user);
-          else return done(null, false, { message: "Invalid password" });
+          if (user !== null) {
+            const result = await bcrypt.compare(password, user.password);
+            if (result) return done(null, user);
+            else return done(null, false, { message: "Invalid password" });
+          } else {
+            return done(null, false, { message: "Invalid email" });
+          }
+        })
+        .catch((err) => {
+          return done(err);
+        });
+    }
+  )
+);
+
+passport.use(
+  "voter",
+  new LocalStrategy(
+    {
+      usernameField: "voterId",
+      passwordField: "password",
+      passReqToCallback: true,
+    },
+    (request, username, password, done) => {
+      Voters.findOne({
+        where: {
+          voterId: username,
+          electionId: request.params.eid,
+        },
+      })
+        .then(async (voter) => {
+          if (voter !== null) {
+            // const result = await bcrypt.compare(password, voter.password);
+            const result = password === voter.password;
+            if (result) return done(null, voter);
+            else return done(null, false, { message: "Invalid Password" });
+          } else {
+            return done(null, false, { message: "Invalid Voter Id" });
+          }
         })
         .catch((err) => {
           return done(err);
@@ -71,14 +107,30 @@ passport.use(
 // NOTE store detail in session by serializing
 passport.serializeUser((user, done) => {
   console.log("Serializing user in session", user.id);
-  done(null, user.id);
+  // done(null, user.id);
+  let role,
+    userPrototype = Object.getPrototypeOf(user);
+
+  if (userPrototype === Voters.prototype) {
+    role = "Voters";
+  } else if (userPrototype === Users.prototype) {
+    role = "Users";
+  }
+
+  done(null, { id: user.id, role });
 });
 
 // NOTE read detail in session by deserializing
-passport.deserializeUser((id, done) => {
-  Users.findByPk(id)
-    .then((user) => done(null, user))
-    .catch((error) => done(error, null));
+passport.deserializeUser(({ id, role }, done) => {
+  if (role === "Users") {
+    Users.findByPk(id)
+      .then((user) => done(null, user))
+      .catch((error) => done(error, null));
+  } else if (role === "Voters") {
+    Voters.findByPk(id)
+      .then((user) => done(null, user))
+      .catch((error) => done(error, null));
+  }
 });
 
 // NOTE library to convert passwords to hashes
@@ -136,6 +188,21 @@ app.post(
   (request, response) => {
     console.log(request.user);
     response.redirect("/dashboard");
+  }
+);
+
+app.post(
+  "/session/:eid/voter",
+  function (request, response, next) {
+    const callback = passport.authenticate("voter", {
+      failureRedirect: `/public/${request.params.eid}`,
+      failureFlash: true,
+    });
+    return callback(request, response, next);
+  },
+  (request, response) => {
+    console.log(request.user);
+    response.redirect(`/public/${request.params.eid}/vote`);
   }
 );
 
@@ -204,14 +271,32 @@ app.put(
   "/elections/:id",
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
-    const election = await Elections.findByPk(request.params.id);
     console.log(request.body);
+    const election = await Elections.findByPk(request.params.id);
+    let updatedElection,
+      updated = false;
     try {
       if ("name" in request.body) {
-        let updatedElection = await election.updateName(request.body.name);
-        return response.json(updatedElection);
+        updatedElection = await election.updateName(request.body.name);
+        updated = true;
       }
-      return response.status(422).json({ message: "Missing name property" });
+
+      if ("start" in request.body) {
+        updatedElection = await election.updateStart(request.body.start);
+        updated = true;
+      }
+
+      if ("end" in request.body) {
+        updatedElection = await election.updateEnd(request.body.end);
+        updated = true;
+      }
+
+      if (!updated)
+        return response
+          .status(422)
+          .json({ message: "Missing name, start and end property" });
+
+      return response.json(updatedElection);
     } catch (error) {
       console.log(error);
       return response.status(422).json(error);
@@ -472,5 +557,32 @@ app.get(
     }
   }
 );
+
+// NOTE Public url
+app.get("/public/:id", async (request, response) => {
+  const election = await Elections.findByPk(request.params.id, {
+    include: [{ model: Questions, include: Options }, { model: Voters }],
+  });
+  if (election.start) {
+    response.render("public", {
+      csrfToken: request.csrfToken(),
+      user: request.user,
+      election,
+    });
+  } else {
+    response.render("403");
+  }
+});
+
+app.get("/public/:id/vote", async (request, response) => {
+  const election = await Elections.findByPk(request.params.id, {
+    include: [{ model: Questions, include: Options }, { model: Voters }],
+  });
+  response.render("vote", {
+    csrfToken: request.csrfToken(),
+    user: request.user,
+    election,
+  });
+});
 
 module.exports = app;

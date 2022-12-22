@@ -37,6 +37,10 @@
             .blue-btn{
                 @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-blue-500  text-blue-500 border-2 border-blue-500;
             }
+
+            .orange-btn{
+                @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-orange-500  text-orange-500 border-2 border-orange-500;
+            }
         }
     </style>
     <script>
@@ -164,30 +168,98 @@
             console.error(err);
           });
       }
+
+      function startElection() {
+        fetch(
+          `/elections/<%= election.id %>`,
+          {}
+        )
+          .then((res) => res.json())
+          .then((election) => {
+            fetch(
+              `/elections/<%= election.id %>`,
+              {
+                method: "put",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  _csrf: token,
+                  ...election,
+                  start: true
+                }),
+              }
+            )
+              .then((res) => {
+                if (res.ok) {
+                  window.location.reload(true);
+                }
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          });
+      }
+
+      function endElection() {
+        fetch(
+          `/elections/<%= election.id %>`,
+          {}
+        )
+          .then((res) => res.json())
+          .then((election) => {
+            fetch(
+              `/elections/<%= election.id %>`,
+              {
+                method: "put",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  _csrf: token,
+                  ...election,
+                  end: true
+                }),
+              }
+            )
+              .then((res) => {
+                if (res.ok) {
+                  window.location.reload(true);
+                }
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          });
+      }
     </script>
   </head>
   <body class="bg-black/70 grid place-items-center min-h-screen">
     <div
       class="text-white w-1/2 rounded-xl p-5 shadow-[rgba(0,_0,_0,_0.4)_0px_30px_90px] bg-black m-10"
     >
-    <div class="flex justify-between items-center">
-        <p class="text-4xl font-bold">Ballot</p>
-        <div class="flex gap-2">
-            <a class="blue-btn" href="/dashboard"><i class="bi bi-house-fill pr-3"></i>Dashboard</a>
-            <a class="red-btn" href="/signout"><i class="bi bi-door-closed-fill pr-2"></i>Sign out</a>
-        </div>
-    </div>
+    <%- include( 'header.ejs', {title: "Ballot", user: user, back: {present: true, name: "Dashboard", url: "/dashboard"}} ) %>
     <div class="flex justify-between items-center p-4">
         <h1 class="text-3xl font-bold"><%= election.name %></h1>
         <div class="flex gap-2">
             <a class="purple-btn" href="/elections/<%= election.id %>/preview">
                 <i class="bi bi-binoculars-fill pr-2"></i>Preview
             </a>
-            <!-- <a class="blue-btn" href="/elections/<%= election.id %>/preview">Preview</a>
-            <a class="green-btn" href="/elections/<%= election.id %>/preview">Preview</a>
-            <a class="red-btn" href="/elections/<%= election.id %>/preview">Preview</a> -->
+            <% if (!election.start && !election.end) { %>
+              <a href="#" class="green-btn" onClick="startElection()"><i class="bi bi-play-circle-fill pr-2"></i>Start</a>
+            <% } %>
+            <% if (election.start) { %>
+              <a class="blue-btn" href="/elections/<%= election.id %>/results"><i class="bi-megaphone-fill pr-2"></i>Result</a>
+            <% } %>
+            <% if (election.start && !election.end) { %>
+              <a target="_blank" class="orange-btn" href="/public/<%= election.id %>/"><i class="bi-box-arrow-up-right pr-2"></i>Public Url</a>
+            <% } %>
+            <% if (election.start && !election.end) { %>
+              <a href="#" class="red-btn" onClick="endElection()"><i class="bi bi-stop-circle-fill pr-2"></i>End</a>
+            <% } %>
         </div>
     </div>
+    <% if (!election.start) { %>
     <div class="border border-4 rounded-xl p-4 m-2 bg-gray-800">
         <div class="text-4xl font-bold">Questions</div>
         <form action="/elections/<%= election.id %>/questions" method="post">
@@ -318,7 +390,8 @@
           </li>
           <% } %>
         </ul>
-      </div>
+    </div>
+    <% } %>
       <div class="border border-4 rounded-xl p-4 m-2 bg-gray-800 mt-6">
         <div class="text-4xl font-bold">Voters</div>
         <form action="/elections/<%= election.id %>/voters" method="post">

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= election.name %> | Online Voting Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+
+      @layer components {
+        .input-field{
+          @apply border border-gray-300/50 rounded p-2 w-full bg-white text-black shadow-lg shadow-gray-300/30;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-black/70 grid place-items-center h-screen">
+    <div
+      class="text-white w-1/3 rounded-xl p-5 shadow-[rgba(0,_0,_0,_0.4)_0px_30px_90px] bg-black"
+    >
+      <p
+        class="text-center bg-gradient-to-r from-purple-600 to-pink-600 text-4xl font-extrabold bg-clip-text text-transparent pb-2"
+      >
+        <%= election.name %>
+      </p>
+      <p
+        class="text-center text-4xl font-extrabold bg-clip-text text-white pb-2"
+      >
+        Sign In
+      </p>
+      <form class="flex flex-col gap-4" action="/session/<%= election.id %>/voter" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <input type="hidden" name="electionId" value="<%= election.id %>" />
+        <div class="text-white">
+          <label class="font-semibold" for="email">Voter Id</label>
+          <input
+            type="text"
+            name="voterId"
+            class="input-field"
+          />
+        </div>
+        <div class="text-white">
+          <label class="font-semibold" for="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            class="input-field"
+          />
+        </div>
+        <button
+          class="self-center w-1/4 transition ease-linear delay-150 font-sans text-lg rounded border border-white p-2 text-white hover:bg-white hover:text-black shadow-lg shadow-white/20"
+          type="submit"
+        >
+          Sign in
+        </button>
+      </form>
+      <ul>
+        <% if(messages && messages.error && messages.error.length > 0)  { %>
+          <% for(var i=0; i<messages.error.length; i++) { %>
+                  <li class="my-2 p-2 text-red-500 border border-red-500 bg-red-50 rounded"><%= messages.error[i] %></li>
+          <% } %>
+        <% } %>        
+      </ul>
+    </div>
+  </body>
+</html>

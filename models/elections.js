@@ -21,6 +21,8 @@ module.exports = (sequelize, DataTypes) => {
     static createElection(name, userId) {
       return this.create({
         name,
+        start: false,
+        end: false,
         userId,
       });
     }
@@ -32,7 +34,13 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
     updateName(name) {
-      return this.update({ name: name });
+      return this.update({ name });
+    }
+    updateStart(start) {
+      return this.update({ start });
+    }
+    updateEnd(end) {
+      return this.update({ end });
     }
     static async remove(id, userId) {
       return this.destroy({
@@ -46,6 +54,8 @@ module.exports = (sequelize, DataTypes) => {
   Elections.init(
     {
       name: DataTypes.STRING,
+      start: DataTypes.BOOLEAN,
+      end: DataTypes.BOOLEAN,
     },
     {
       sequelize,
