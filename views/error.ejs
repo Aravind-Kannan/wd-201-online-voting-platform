@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= code %> | Online Voting Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+    </head>
+    <body class="bg-black/70 grid place-items-center min-h-screen">
+      <div
+        class="text-white w-1/2 rounded-xl p-5 shadow-[rgba(0,_0,_0,_0.4)_0px_30px_90px] bg-black m-10"
+      >
+        <p
+          class="text-center bg-gradient-to-b from-red-500 via-orange-400 to-yellow-500 text-9xl font-extrabold bg-clip-text text-transparent p-8"
+        >
+          <%= code %>
+        </p>
+        <p class="pb-8 text-center text-gray-400 font-semibold text-4xl border-b-2 border-white">
+          <%= status %>
+        </p>
+        <p class="p-8 text-center font-semibold text-xl">
+          <%= message %>
+        </p>
+      </div>
+    </body>
+</html>

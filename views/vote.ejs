@@ -46,39 +46,50 @@
     >
       <div class="flex justify-between items-center py-4 gap-2">
         <p class="text-3xl font-semibold"><%= election.name %></p>
+        <p class="text-xl rounded rounded-lg bg-white text-black p-2"><i class="bi bi-person-circle pr-2"></i><%= user.voterId %></p>
       </div>
       <div>
-        <ol>
-          <% for(let i = 0; i < election.Questions.length; i++) { %>
-          <li class="my-4 p-2 bg-gray-800 rounded-lg">
-            <div>
-              <h1 class="text-xl font-semifold" id="question-title-<%= election.Questions[i].id %>">
-                <%= i + 1 + ". " + election.Questions[i].title %>
-              </h1>
-              <h2 class="text-md text-gray-500" id="question-description-<%= election.Questions[i].id %>">
-                <%= election.Questions[i].description %>
-              </h2>
+        <form action="/public/<%= election.id %>/cast" method="post">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="electionId" value="<%= election.id %>" />
+            <input type="hidden" name="voterId" value="<%= user.id %>" />
+            <ol>
+            <% for(let i = 0; i < election.Questions.length; i++) { %>
+            <li class="my-4 p-2 bg-gray-800 rounded-lg">
+                <div>
+                <h1 class="text-xl font-semifold" id="question-title-<%= election.Questions[i].id %>">
+                    <%= i + 1 + ". " + election.Questions[i].title %>
+                </h1>
+                <h2 class="text-md text-gray-500" id="question-description-<%= election.Questions[i].id %>">
+                    <%= election.Questions[i].description %>
+                </h2>
+                </div>
+                <div>
+                    <% for(let j = 0; j < election.Questions[i].Options.length; j++)
+                    { %>
+                    <div class="bg-gray-700 rounded-xl p-2 my-2 hover:bg-gray-500">
+                        <input
+                        name="question-<%= election.Questions[i].id %>"
+                        type="radio"
+                        value="<%= election.Questions[i].Options[j].id %>"
+                        id="option-<%= election.Questions[i].Options[j].id %>"
+                        required
+                        >
+                        <label for="option-<%= election.Questions[i].Options[j].id %>">
+                            <%= election.Questions[i].Options[j].title %>
+                        </label>
+                    </div>
+                    <% } %>
+                </div>
+            </li>
+            <% } %>
+            </ol>
+            <div class="grid place-items-center">
+                <button class="green-btn" type="submit">
+                    <i class="bi bi-box-fill pr-2"></i>Cast Vote
+                </button>
             </div>
-            <div>
-                <% for(let j = 0; j < election.Questions[i].Options.length; j++)
-                { %>
-                  <div class="bg-gray-700 rounded-xl p-2 my-2 hover:bg-gray-500">
-                    <input
-                      name="question-<%= election.Questions[i].id %>"
-                      type="radio"
-                      value="<%= election.Questions[i].Options[j].id %>"
-                      id="question-title-<%= election.Questions[i].Options[j].id %>"
-                      required
-                    >
-                    <label for="question-title-<%= election.Questions[i].Options[j].id %>">
-                        <%= election.Questions[i].Options[j].title %>
-                    </label>
-                  </div>
-                <% } %>
-            </div>
-          </li>
-          <% } %>
-        </ul>
+        </form>
       </div>
     </div>
   </body>

@@ -11,6 +11,9 @@ module.exports = (sequelize, DataTypes) => {
       Voters.belongsTo(models.Elections, {
         foreignKey: "electionId",
       });
+      Voters.hasMany(models.Votes, {
+        foreignKey: "voterId",
+      });
     }
     static createVoter(voterId, password, electionId) {
       return this.create({

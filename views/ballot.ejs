@@ -264,7 +264,7 @@
         <div class="text-4xl font-bold">Questions</div>
         <form action="/elections/<%= election.id %>/questions" method="post">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-          <div class="flex py-4 gap-2">
+          <div class="flex py-4 gap-2 justify-between align-items">
             <div class="flex-auto">
               <input
                 name="title"
@@ -313,18 +313,18 @@
                     value="<%= election.Questions[i].description %>"
                     id="question-description-<%= election.Questions[i].id %>"
                 />
-                <a
+                  <a
                     href="#"
                     class="flex-none yellow-btn"
-                    onClick="updateQuestion(<%= election.Questions[i].id %>)"
-                    ><i class="bi bi-pencil-fill pr-2"></i>Edit</a
-                >
-                <a
+                    onClick="updateQuestion(<%= election.Questions[i].id %>)">
+                      <i class="bi bi-pencil-fill"></i>
+                  </a>
+                  <a
                     href="#"
                     class="flex-none red-btn"
-                    onClick="deleteQuestion(<%= election.Questions[i].id %>)"
-                    ><i class="bi bi-trash3-fill pr-2"></i>Delete</a
-                >
+                    onClick="deleteQuestion(<%= election.Questions[i].id %>)">
+                    <i class="bi bi-trash3-fill"></i>
+                  </a>
                 </div>
             </div>
             <div>
@@ -373,14 +373,14 @@
                                 href="#"
                                 onClick="updateOption(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
                             >
-                                <i class="bi bi-pencil-fill pr-2"></i>Edit
+                                <i class="bi bi-pencil-fill"></i>
                             </a>
                             <a
                                 class="flex-none red-btn"
                                 href="#"
                                 onClick="deleteOption(<%= election.Questions[i].id %>, <%= election.Questions[i].Options[j].id %>)"
                             >
-                                <i class="bi bi-trash3-fill pr-2"></i>Delete
+                                <i class="bi bi-trash3-fill"></i>
                             </a>
                         </div>
                     </li>
@@ -426,10 +426,17 @@
           <li class="border border-2 rounded-xl p-2 px-4 m-2 hover:bg-gray-600">
             <div class="flex justify-between items-center">
               <p class="flex-auto font-semibold"><%= election.Voters[i].voterId %></p>
-              <a class="flex-none red-btn" href="#" onClick="deleteVoter(<%= election.Voters[i].id %>)"
-                >
-                <i class="bi bi-trash3-fill pr-2"></i>Delete
-              </a>
+              <% if(election.Voters[i].Votes.length === 0) { %>
+                <a class="flex-none red-btn" href="#" onClick="deleteVoter(<%= election.Voters[i].id %>)"
+                  >
+                  <i class="bi bi-trash3-fill pr-2"></i>Delete
+                </a>
+              <% } else { %>
+                <p class="flex-none blue-btn" 
+                  >
+                  <i class="bi bi-file-check-fill pr-2"></i>Voted
+                </p>
+              <% } %>
             </div>
           </li>
           <% } %>
