@@ -34,7 +34,7 @@ module.exports = {
       "Elections",
       [
         {
-          name: "Election 1",
+          name: "FIFA WC 2022: Semi Final Trivia",
           start: false,
           end: false,
           createdAt: new Date(),
@@ -57,15 +57,15 @@ module.exports = {
       "Questions",
       [
         {
-          title: "Question 1",
-          description: "Description 1",
+          title: "Who will the Semi-Final 1?",
+          description: "ARG vs CRO: Will Argentina payback the debt of 2018?",
           createdAt: new Date(),
           updatedAt: new Date(),
           electionId: await queryInterface.rawSelect(
             "Elections",
             {
               where: {
-                name: "Election 1",
+                name: "FIFA WC 2022: Semi Final Trivia",
               },
             },
             ["id"]
@@ -79,28 +79,86 @@ module.exports = {
       "Options",
       [
         {
-          title: "Option 1",
+          title: "Argentina",
           createdAt: new Date(),
           updatedAt: new Date(),
           questionId: await queryInterface.rawSelect(
             "Questions",
             {
               where: {
-                title: "Question 1",
+                title: "Who will the Semi-Final 1?",
               },
             },
             ["id"]
           ),
         },
         {
-          title: "Option 2",
+          title: "Croatia",
           createdAt: new Date(),
           updatedAt: new Date(),
           questionId: await queryInterface.rawSelect(
             "Questions",
             {
               where: {
-                title: "Question 1",
+                title: "Who will the Semi-Final 1?",
+              },
+            },
+            ["id"]
+          ),
+        },
+      ],
+      {}
+    );
+
+    await queryInterface.bulkInsert(
+      "Questions",
+      [
+        {
+          title: "Who will the Semi-Final 2?",
+          description:
+            "FRA vs MOR: The face-off of the underdogs, African Lions, against Le Bluers!",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          electionId: await queryInterface.rawSelect(
+            "Elections",
+            {
+              where: {
+                name: "FIFA WC 2022: Semi Final Trivia",
+              },
+            },
+            ["id"]
+          ),
+        },
+      ],
+      {}
+    );
+
+    await queryInterface.bulkInsert(
+      "Options",
+      [
+        {
+          title: "France",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          questionId: await queryInterface.rawSelect(
+            "Questions",
+            {
+              where: {
+                title: "Who will the Semi-Final 2?",
+              },
+            },
+            ["id"]
+          ),
+        },
+        {
+          title: "Morocco",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          questionId: await queryInterface.rawSelect(
+            "Questions",
+            {
+              where: {
+                title: "Who will the Semi-Final 2?",
               },
             },
             ["id"]
@@ -114,30 +172,30 @@ module.exports = {
       "Voters",
       [
         {
-          voterId: "Voter1",
-          password: "voter1",
+          voterId: "JohnDoe",
+          password: await bcrypt.hash("johnDoe", saltRounds),
           createdAt: new Date(),
           updatedAt: new Date(),
           electionId: await queryInterface.rawSelect(
             "Elections",
             {
               where: {
-                name: "Election 1",
+                name: "FIFA WC 2022: Semi Final Trivia",
               },
             },
             ["id"]
           ),
         },
         {
-          voterId: "Voter2",
-          password: "voter2",
+          voterId: "JaneDoe",
+          password: await bcrypt.hash("janeDoe", saltRounds),
           createdAt: new Date(),
           updatedAt: new Date(),
           electionId: await queryInterface.rawSelect(
             "Elections",
             {
               where: {
-                name: "Election 1",
+                name: "FIFA WC 2022: Semi Final Trivia",
               },
             },
             ["id"]
