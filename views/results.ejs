@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Results | <%= election.name %> | Online Voting Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/colorbrewer.v1.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+    <style type="text/tailwindcss">
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
+
+        @layer components {
+            .input-field{
+                @apply border border-gray-300/50 rounded p-2 w-full bg-white text-black shadow-lg shadow-gray-300/30 text-gray-800 text-sm;
+            }
+
+            .red-btn{
+                @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-red-500 text-red-500 border-2 border-red-500;
+            }
+
+            .green-btn{
+                @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-green-500 text-green-500 border-2 border-green-500
+            }
+
+            .yellow-btn{
+                @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-yellow-500  text-yellow-500 border-2 border-yellow-500;
+            }
+
+            .purple-btn{
+                @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-purple-500  text-purple-500 border-2 border-purple-500;
+            }
+
+            .blue-btn{
+                @apply transition ease-linear delay-150 p-2 rounded-lg hover:text-white hover:bg-blue-500  text-blue-500 border-2 border-blue-500;
+            }
+        }
+    </style>
+    <script>
+        let election = <%- JSON.stringify(election) %>;
+        let data = [];
+        let colors = ["#ea2b1f", "#edae49", "#61210f", "#f9df74", "#f9edcc"];
+        let sizes = {
+            innerRadius: 50,
+            outerRadius: 100
+        };
+        let durations = {
+            entryAnimation: 2000
+        };
+
+        function draw(id) {
+            d3.select(id).html("");
+            console.log(colors);
+            
+            let generator = d3.pie()
+                .sort(null);
+
+            let chart = generator(data);
+
+            let arcs = d3.select(id)
+                .append("g")
+                .attr("transform", "translate(100, 100)")
+                .selectAll("path")
+                .data(chart)
+                .enter()
+                .append("path")
+                .style("fill", (d, i) => colors[i%colors.length]);
+
+            let angleInterpolation = d3.interpolate(generator.startAngle()(), generator.endAngle()());
+
+            let innerRadiusInterpolation = d3.interpolate(0, sizes.innerRadius);
+            let outerRadiusInterpolation = d3.interpolate(0, sizes.outerRadius);
+
+            let arc = d3.arc();
+
+            arcs.transition()
+                .duration(durations.entryAnimation)
+                .attrTween("d", d => {
+                let originalEnd = d.endAngle;
+                return t => {
+                    let currentAngle = angleInterpolation(t);
+                    if (currentAngle < d.startAngle) {
+                    return "";
+                    }
+
+                    d.endAngle = Math.min(currentAngle, originalEnd);
+
+                    return arc(d);
+                };
+                });
+
+            d3.select(id)
+                .transition()
+                .duration(durations.entryAnimation)
+                .tween("arcRadii", () => {
+                return t => arc
+                    .innerRadius(innerRadiusInterpolation(t))
+                    .outerRadius(outerRadiusInterpolation(t));
+                });
+        }
+
+        window.onload = (event) => {
+            for(let i = 0; i < election.Questions.length; i++) {
+                data = [];
+                for(let j = 0; j < election.Questions[i].Options.length; j++) {
+                    data.push(election.Questions[i].Options[j].Votes.length);
+                    document.getElementById(`legend-${election.Questions[i].Options[j].id}`).classList.add(`bg-[${colors[j]}]`);
+                }
+                draw(`#chart-${i}`);
+            }
+        };
+    </script>
+  </head>
+  <body class="bg-black/70 grid place-items-center min-h-screen">
+    <div
+      class="text-white w-1/2 rounded-xl p-5 shadow-[rgba(0,_0,_0,_0.4)_0px_30px_90px] bg-black m-10"
+    >
+      <div class="flex justify-between items-center py-4 gap-2">
+        <p class="text-3xl font-semibold"><%= election.name %></p>
+        <p class="text-3xl font-semibold"><%= voteStat.voted %> / <%= voteStat.total %> Votes</p>
+      </div>
+      <div>
+        <ol>
+        <% for(let i = 0; i < election.Questions.length; i++) { %>
+        <li class="my-4 p-2 bg-gray-800 rounded-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-semifold" id="question-title-<%= election.Questions[i].id %>">
+                        <%= i + 1 + ". " + election.Questions[i].title %>
+                    </h1>
+                    <h2 class="text-md text-gray-500" id="question-description-<%= election.Questions[i].id %>">
+                        <%= election.Questions[i].description %>
+                    </h2>
+                </div>
+                <svg id="chart-<%= i %>" class="p-4" height="200" preserveAspectRatio="xMinYMin meet" viewBox="0 0 200 200"></svg>
+            </div>
+            <div>
+                <% for(let j = 0; j < election.Questions[i].Options.length; j++)
+                { %>
+                    <div class="bg-gray-700 rounded-xl p-1 my-2 hover:bg-gray-500">
+                        <div class="flex justify-between items-center py-4 gap-2">
+                            <p class="pl-4" id="option-<%= election.Questions[i].Options[j].id %>">
+                                <%= election.Questions[i].Options[j].title %>
+                            </p>
+                            <p class="p-2 mr-4 text-white rounded" id="legend-<%= election.Questions[i].Options[j].id %>">
+                                <%= Math.round(election.Questions[i].Options[j].Votes.length/voteStat.voted*100) %> %
+                                <!-- <%= election.Questions[i].Options[j].Votes.length %> / <%= voteStat.voted %> -->
+                            </p>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+        </li>
+        <% } %>
+        </ol>
+      </div>
+    </div>
+  </body>
+</html>

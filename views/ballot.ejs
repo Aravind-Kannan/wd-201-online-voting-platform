@@ -259,6 +259,13 @@
             <% } %>
         </div>
     </div>
+    <ul>
+      <% if(messages && messages.error && messages.error.length > 0)  { %>
+        <% for(var i=0; i<messages.error.length; i++) { %>
+                <li class="my-2 p-2 text-red-500 border border-red-500 bg-red-50 rounded"><%= messages.error[i] %></li>
+        <% } %>
+      <% } %>        
+    </ul>
     <% if (!election.start) { %>
     <div class="border border-4 rounded-xl p-4 m-2 bg-gray-800">
         <div class="text-4xl font-bold">Questions</div>

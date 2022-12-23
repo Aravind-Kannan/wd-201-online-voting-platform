@@ -745,21 +745,38 @@ function ensureVoterLoggedIn(request, response, next) {
 
 // NOTE Public login page to cast vote
 app.get("/public/:id", async (request, response) => {
-  const election = await Elections.findByPk(request.params.id, {
-    include: [{ model: Questions, include: Options }, { model: Voters }],
-  });
-  if (election.start) {
-    response.render("public", {
-      csrfToken: request.csrfToken(),
-      user: request.user,
-      election,
+  try {
+    const election = await Elections.findByPk(request.params.id, {
+      include: [{ model: Questions, include: Options }, { model: Voters }],
     });
-  } else {
-    response.status(403).render("error", {
-      code: "403",
-      status: "Forbidden",
-      message:
-        "Election is yet to start, can't cast votes before the election begins",
+    if (election == null) {
+      response.status(403).render("error", {
+        code: "404",
+        status: "Not Found",
+        message: "Invalid Election Id",
+      });
+    } else if (!election.start) {
+      response.status(403).render("error", {
+        code: "403",
+        status: "Forbidden",
+        message:
+          "Election is yet to start, can't cast votes before the election begins",
+      });
+    } else if (election.end) {
+      response.redirect(`/elections/${request.params.id}/results`);
+    } else {
+      response.render("public", {
+        csrfToken: request.csrfToken(),
+        user: request.user,
+        election,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    response.status(400).render("error", {
+      code: "400",
+      status: "Bad request",
+      message: err,
     });
   }
 });
@@ -767,25 +784,46 @@ app.get("/public/:id", async (request, response) => {
 // NOTE Public vote page to fill your vote on election
 app.get("/public/:id/vote", ensureVoterLoggedIn, async (request, response) => {
   if (Object.getPrototypeOf(request.user) === Voters.prototype) {
-    const election = await Elections.findByPk(request.params.id, {
-      include: [{ model: Questions, include: Options }, { model: Voters }],
-    });
-    let voted = await Votes.haveAlreadyVoted(
-      request.params.id,
-      request.user.id
-    );
-    if (voted) {
-      if (election.end)
-        response.redirect(`/public/${request.params.id}/result`);
-      response.render("acknowledgement", {
-        election,
-        message: "You have already voted in this election!",
+    try {
+      const election = await Elections.findByPk(request.params.id, {
+        include: [{ model: Questions, include: Options }, { model: Voters }],
       });
-    } else {
-      response.render("vote", {
-        csrfToken: request.csrfToken(),
-        user: request.user,
-        election,
+
+      if (!election.start) {
+        response.status(403).render("error", {
+          code: "403",
+          status: "Forbidden",
+          message:
+            "Election is yet to start, can't cast votes before the election begins",
+        });
+      } else if (election.end) {
+        response.redirect(`/elections/${request.params.id}/results`);
+      }
+
+      let voted = await Votes.haveAlreadyVoted(
+        request.params.id,
+        request.user.id
+      );
+
+      if (voted) {
+        response.render("acknowledgement", {
+          election,
+          message:
+            "You have already voted in this election! Revisit after the election ends to view the result!",
+        });
+      } else {
+        response.render("vote", {
+          csrfToken: request.csrfToken(),
+          user: request.user,
+          election,
+        });
+      }
+    } catch (err) {
+      console.log(err);
+      response.status(400).render("error", {
+        code: "400",
+        status: "Bad request",
+        message: err,
       });
     }
   } else {
@@ -802,6 +840,18 @@ app.post("/public/:id/cast", ensureVoterLoggedIn, async (request, response) => {
   if (Object.getPrototypeOf(request.user) === Voters.prototype) {
     try {
       const election = await Elections.findByPk(request.params.id);
+
+      if (!election.start) {
+        response.status(403).render("error", {
+          code: "403",
+          status: "Forbidden",
+          message:
+            "Election is yet to start, can't cast votes before the election begins",
+        });
+      } else if (election.end) {
+        response.redirect(`/elections/${request.params.id}/results`);
+      }
+
       let voted = await Votes.haveAlreadyVoted(
         request.params.id,
         request.user.id
@@ -809,7 +859,8 @@ app.post("/public/:id/cast", ensureVoterLoggedIn, async (request, response) => {
       if (voted) {
         response.render("acknowledgement", {
           election,
-          message: "You have already voted in this election!",
+          message:
+            "You have already voted in this election! Revisit after the election ends to view the result!",
         });
       } else {
         Object.keys(request.body).forEach(async (key) => {
@@ -844,12 +895,50 @@ app.post("/public/:id/cast", ensureVoterLoggedIn, async (request, response) => {
   }
 });
 
-// app.post(
-//   "/public/:id/result",
-//   connectEnsureLogin.ensureLoggedIn(),
-//   async (request, response) => {
-//     // If user is Admin allow always, if user is Voter check if election over
-//   }
-// );
+app.get("/elections/:id/results", async (request, response) => {
+  try {
+    const election = await Elections.findByPk(request.params.id, {
+      include: [
+        { model: Questions, include: [{ model: Options, include: Votes }] },
+        { model: Voters, include: Votes },
+      ],
+    });
+
+    if (election == null) {
+      response.status(403).render("error", {
+        code: "404",
+        status: "Not Found",
+        message: "Invalid Election Id",
+      });
+    } else if (
+      ("user" in request &&
+        Object.getPrototypeOf(request.user) === Users.prototype) ||
+      election.end
+    ) {
+      let voteStat = { voted: 0, total: 0 };
+      voteStat.total = election.Voters.length;
+      election.Voters.forEach((voter) => {
+        if (voter.Votes.length !== 0) voteStat.voted += 1;
+      });
+      console.log(JSON.stringify(election, null, 2));
+      response.render("results", { voteStat, election });
+    } else if (!election.end) {
+      response.status(403).render("error", {
+        code: "403",
+        status: "Forbidden",
+        message: "Please wait for the election to end",
+      });
+    } else {
+      response.status(403).render("error", {
+        code: "403",
+        status: "Forbidden",
+        message: "Only authenticated voters are authorized to view results",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return response.redirect(`/`);
+  }
+});
 
 module.exports = app;
