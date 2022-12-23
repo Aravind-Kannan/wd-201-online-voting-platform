@@ -67,9 +67,9 @@ passport.use(
           if (user !== null) {
             const result = await bcrypt.compare(password, user.password);
             if (result) return done(null, user);
-            else return done(null, false, { message: "Invalid Password" });
+            else return done(null, false, { message: "Incorrect Password" });
           } else {
-            return done(null, false, { message: "Invalid Email" });
+            return done(null, false, { message: "Incorrect Email" });
           }
         })
         .catch((err) => {
@@ -98,9 +98,9 @@ passport.use(
           if (voter !== null) {
             const result = await bcrypt.compare(password, voter.password);
             if (result) return done(null, voter);
-            else return done(null, false, { message: "Invalid Password" });
+            else return done(null, false, { message: "Incorrect Password" });
           } else {
-            return done(null, false, { message: "Invalid Voter Id" });
+            return done(null, false, { message: "Incorrect Voter Id" });
           }
         })
         .catch((err) => {
@@ -228,7 +228,8 @@ app.post(
 
 // NOTE [Users] Users endpoint to signup new administrators
 app.post("/users", async (request, response) => {
-  const hashedPwd = await bcrypt.hash(request.body.password, saltRounds);
+  let hashedPwd = await bcrypt.hash(request.body.password, saltRounds);
+  if (request.body.password === "") hashedPwd = "";
   try {
     const user = await Users.create({
       firstName: request.body.firstName,
@@ -244,7 +245,11 @@ app.post("/users", async (request, response) => {
     });
   } catch (error) {
     console.log(error);
-    request.flash("error", error.errors[0].message);
+    if ("errors" in error)
+      request.flash(
+        "error",
+        error.errors.map((error) => error.message)
+      );
     response.redirect("/signup");
   }
 });
@@ -291,9 +296,15 @@ app.post(
       try {
         const loggedInUser = request.user.id;
         await Elections.createElection(request.body.name, loggedInUser);
+        request.flash("success", "Added new election successfully");
         return response.redirect("/dashboard");
       } catch (error) {
         console.log(error);
+        if ("errors" in error)
+          request.flash(
+            "error",
+            error.errors.map((error) => error.message)
+          );
         return response.redirect("/dashboard");
       }
     } else {
@@ -316,21 +327,61 @@ app.put(
     if (Object.getPrototypeOf(request.user) === Users.prototype) {
       const election = await Elections.findByPk(request.params.id);
       let updatedElection,
-        updated = false;
+        updated = false,
+        invalid = false;
       try {
-        if ("name" in request.body) {
+        console.log(request.body);
+        if ("name" in request.body && request.body.name !== election.name) {
           updatedElection = await election.updateName(request.body.name);
           updated = true;
+          request.flash("success", "Edited election name successfully");
         }
 
         if ("start" in request.body) {
-          updatedElection = await election.updateStart(request.body.start);
+          if (await election.hasInsufficientQuestions(request.params.id)) {
+            request.flash(
+              "error",
+              "Please create a minimum of 1 question to start election"
+            );
+            invalid = true;
+          }
+
+          if (await election.hasInsufficientOptions(request.params.id)) {
+            request.flash(
+              "error",
+              "Please create a minimum of 2 options per question to start election"
+            );
+            invalid = true;
+          }
+
+          if (await election.hasInsufficientVoters(request.params.id)) {
+            request.flash(
+              "error",
+              "Please create a minimum of 2 voters to start election"
+            );
+            invalid = true;
+          }
+
+          if (
+            !invalid &&
+            election.start === false &&
+            request.body.start === true
+          ) {
+            updatedElection = await election.updateStart(request.body.start);
+            updated = true;
+            request.flash("success", "Started election successfully");
+          }
           updated = true;
         }
 
-        if ("end" in request.body) {
+        if (
+          "end" in request.body &&
+          election.end === false &&
+          request.body.end === true
+        ) {
           updatedElection = await election.updateEnd(request.body.end);
           updated = true;
+          request.flash("success", "Ended election successfully");
         }
 
         if (!updated)
@@ -341,6 +392,12 @@ app.put(
         return response.json(updatedElection);
       } catch (error) {
         console.log(error);
+        if ("errors" in error) {
+          request.flash(
+            "error",
+            error.errors.map((error) => error.message)
+          );
+        }
         return response.status(422).json(error);
       }
     } else {

@@ -129,10 +129,10 @@
         <li class="my-4 p-2 bg-gray-800 rounded-lg">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-xl font-semifold" id="question-title-<%= election.Questions[i].id %>">
+                    <h1 class="pl-4 text-xl font-semifold" id="question-title-<%= election.Questions[i].id %>">
                         <%= i + 1 + ". " + election.Questions[i].title %>
                     </h1>
-                    <h2 class="text-md text-gray-500" id="question-description-<%= election.Questions[i].id %>">
+                    <h2 class="pl-4 text-md text-gray-500" id="question-description-<%= election.Questions[i].id %>">
                         <%= election.Questions[i].description %>
                     </h2>
                 </div>
@@ -147,7 +147,7 @@
                                 <%= election.Questions[i].Options[j].title %>
                             </p>
                             <p class="p-2 mr-4 text-white rounded" id="legend-<%= election.Questions[i].Options[j].id %>">
-                                <%= Math.round(election.Questions[i].Options[j].Votes.length/voteStat.voted*100) %> %
+                                <%= isNaN(Math.round(election.Questions[i].Options[j].Votes.length/voteStat.voted*100)) ? 0 : Math.round(election.Questions[i].Options[j].Votes.length/voteStat.voted*100) %> %
                                 <!-- <%= election.Questions[i].Options[j].Votes.length %> / <%= voteStat.voted %> -->
                             </p>
                     </div>

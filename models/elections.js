@@ -39,6 +39,49 @@ module.exports = (sequelize, DataTypes) => {
     updateName(name) {
       return this.update({ name });
     }
+    async hasInsufficientQuestions(eid) {
+      const election = await Elections.findByPk(eid, {
+        include: [
+          {
+            model: sequelize.models.Questions,
+            include: sequelize.models.Options,
+          },
+          { model: sequelize.models.Voters, include: sequelize.models.Votes },
+        ],
+      });
+
+      return election.Questions.length === 0;
+    }
+    async hasInsufficientOptions(eid) {
+      const election = await Elections.findByPk(eid, {
+        include: [
+          {
+            model: sequelize.models.Questions,
+            include: sequelize.models.Options,
+          },
+          { model: sequelize.models.Voters, include: sequelize.models.Votes },
+        ],
+      });
+
+      const count = election.Questions.filter(
+        (question) => question.Options.length < 2
+      );
+
+      return count.length !== 0;
+    }
+    async hasInsufficientVoters(eid) {
+      const election = await Elections.findByPk(eid, {
+        include: [
+          {
+            model: sequelize.models.Questions,
+            include: sequelize.models.Options,
+          },
+          { model: sequelize.models.Voters, include: sequelize.models.Votes },
+        ],
+      });
+
+      return election.Voters.length < 2;
+    }
     updateStart(start) {
       return this.update({ start });
     }
