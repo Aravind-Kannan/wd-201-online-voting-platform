@@ -264,6 +264,33 @@ app.get("/signout", (request, response, next) => {
   });
 });
 
+// NOTE [Elections] Elections endpoint to fetch all elections for given user
+app.get(
+  "/elections",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    if (Object.getPrototypeOf(request.user) === Users.prototype) {
+      try {
+        const election = await Elections.findAll({
+          where: {
+            userId: request.user.id,
+          },
+        });
+        return response.json(election);
+      } catch (error) {
+        console.log(error);
+        return response.status(422).json(error);
+      }
+    } else {
+      return response.status(403).json({
+        status: "Forbidden",
+        message:
+          "Only authenticated administrators are authorized to access elections resource",
+      });
+    }
+  }
+);
+
 // NOTE [Elections] Elections endpoint to fetch a particular election
 app.get(
   "/elections/:id",
