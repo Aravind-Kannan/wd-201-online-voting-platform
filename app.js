@@ -769,6 +769,33 @@ app.delete(
   }
 );
 
+// NOTE [Voters] Voters endpoint to fetch all voters for given election
+app.get(
+  "/elections/:eid/voters",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    if (Object.getPrototypeOf(request.user) === Users.prototype) {
+      try {
+        const voters = await Voters.findAll({
+          where: {
+            electionId: request.params.eid,
+          },
+        });
+        return response.json(voters);
+      } catch (error) {
+        console.log(error);
+        return response.status(422).json(error);
+      }
+    } else {
+      return response.status(403).json({
+        status: "Forbidden",
+        message:
+          "Only authenticated administrators are authorized to access voters resource",
+      });
+    }
+  }
+);
+
 // NOTE [Voters] Voters endpoint to fetch a particular voter
 app.get(
   "/elections/:eid/voters/:id",
@@ -801,7 +828,7 @@ app.post(
       try {
         await Voters.createVoter(
           request.body.voterId,
-          request.body.password,
+          await bcrypt.hash(request.body.password, saltRounds),
           request.params.eid
         );
         return response.redirect(`/elections/${request.params.eid}/ballot`);
@@ -903,11 +930,18 @@ app.get("/public/:id", async (request, response) => {
     } else if (election.end) {
       response.redirect(`/elections/${request.params.id}/results`);
     } else {
-      response.render("public", {
-        csrfToken: request.csrfToken(),
-        user: request.user,
-        election,
-      });
+      if (
+        request.user &&
+        Object.getPrototypeOf(request.user) === Voters.prototype
+      ) {
+        response.redirect(`/public/${request.params.id}/vote`);
+      } else {
+        response.render("public", {
+          csrfToken: request.csrfToken(),
+          user: request.user,
+          election,
+        });
+      }
     }
   } catch (err) {
     console.log(err);
