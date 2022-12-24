@@ -294,4 +294,154 @@ describe("User Test Suite", () => {
     // NOTE Compare counts
     expect(latestCount).toBe(count - 1);
   });
+
+  test("User A: Create a option", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all questions to obtain questionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+
+    // NOTE Fetch all options to obtain count
+    let optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    let options = JSON.parse(optionsResponse.text);
+    let count = options.length;
+
+    // NOTE Create new option
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/questions/${qid}/options`).send({
+      title: "🇦🇷 Argentina",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all questions to obtain latest count
+    optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    let latestCount = JSON.parse(optionsResponse.text).length;
+
+    // NOTE Compare counts
+    expect(latestCount).toBe(count + 1);
+  });
+
+  test("User A: Edit one option", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all questions to obtain questionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+
+    // NOTE Create new option
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/questions/${qid}/options`).send({
+      title: "France",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all options to obtain optionId
+    let optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    let options = JSON.parse(optionsResponse.text);
+    let oid = options[options.length - 1].id;
+
+    // NOTE Edit option
+    res = await agent.get("/dashboard");
+    csrfToken = extractCsrfToken(res);
+    await agent.put(`/elections/${eid}/questions/${qid}/options/${oid}`).send({
+      title: "🇫🇷 France",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all questions to obtain latest count
+    optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    options = JSON.parse(optionsResponse.text);
+
+    // NOTE Compare the newly updated option
+    expect(options[options.length - 1].title).toBe("🇫🇷 France");
+  });
+
+  test("User A: Delete one option", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all questions to obtain questionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+
+    // NOTE Create new option
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/questions/${qid}/options`).send({
+      title: "Morocco",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all options to obtain optionId
+    let optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    let options = JSON.parse(optionsResponse.text);
+    let oid = options[options.length - 1].id;
+    let count = options.length;
+
+    // NOTE Edit option
+    res = await agent.get("/dashboard");
+    csrfToken = extractCsrfToken(res);
+    await agent
+      .delete(`/elections/${eid}/questions/${qid}/options/${oid}`)
+      .send({
+        _csrf: csrfToken,
+      });
+
+    // NOTE Fetch all questions to obtain latest count
+    optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    options = JSON.parse(optionsResponse.text);
+    let latestCount = options.length;
+
+    expect(latestCount).toBe(count - 1);
+  });
 });
