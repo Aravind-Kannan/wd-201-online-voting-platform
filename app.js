@@ -638,6 +638,33 @@ app.delete(
   }
 );
 
+// NOTE [Options] Options endpoint to fetch all options for given election and question
+app.get(
+  "/elections/:eid/questions/:qid/options",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    if (Object.getPrototypeOf(request.user) === Users.prototype) {
+      try {
+        const options = await Options.findAll({
+          where: {
+            questionId: request.params.qid,
+          },
+        });
+        return response.json(options);
+      } catch (error) {
+        console.log(error);
+        return response.status(422).json(error);
+      }
+    } else {
+      return response.status(403).json({
+        status: "Forbidden",
+        message:
+          "Only authenticated administrators are authorized to access options resource",
+      });
+    }
+  }
+);
+
 // NOTE [Options] Options endpoint to fetch a particular option
 app.get(
   "/elections/:eid/questions/:qid/options/:id",
