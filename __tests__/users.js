@@ -164,4 +164,134 @@ describe("User Test Suite", () => {
     // NOTE Compare the newly updated name
     expect(latestCount).toBe(count - 1);
   });
+
+  test("User A: Create a question", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Create new election
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post("/elections").send({
+      name: "FIFA WC 2022: Trivia",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all questions to obtain count
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let count = JSON.parse(questionsResponse.text).length;
+
+    // NOTE Create new question
+    res = await agent.get("/dashboard");
+    csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/questions`).send({
+      title: "Who will win the world cup?",
+      description: "Les Bleus vs La Albiceleste",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all questions to obtain latest count
+    questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let latestCount = JSON.parse(questionsResponse.text).length;
+
+    // NOTE Compare counts
+    expect(latestCount).toBe(count + 1);
+  });
+
+  test("User A: Edit question title", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain latest electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all questions to obtain latest electionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+
+    // NOTE Update the created question
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.put(`/elections/${eid}/questions/${qid}`).send({
+      title: "Who will be world champs?",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all elections to check if changed
+    questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    questions = JSON.parse(questionsResponse.text);
+
+    // NOTE Compare the newly updated name
+    expect(questions[questions.length - 1].title).toBe(
+      "Who will be world champs?"
+    );
+  });
+
+  test("User A: Delete a question", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Create new question
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/questions`).send({
+      title: "Delete Title",
+      description: "Delete Description",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all questions to obtain questionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+    let count = questions.length;
+
+    // NOTE Update the created question
+    res = await agent.get("/dashboard");
+    csrfToken = extractCsrfToken(res);
+    res = await agent.delete(`/elections/${eid}/questions/${qid}`).send({
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all questions to obtain latest count
+    questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let latestCount = JSON.parse(questionsResponse.text).length;
+
+    // NOTE Compare counts
+    expect(latestCount).toBe(count - 1);
+  });
 });
