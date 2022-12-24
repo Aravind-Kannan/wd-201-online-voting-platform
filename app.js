@@ -1037,14 +1037,14 @@ app.post("/public/:id/cast", ensureVoterLoggedIn, async (request, response) => {
       } else {
         Object.keys(request.body).forEach(async (key) => {
           if (key.indexOf("question-") !== -1) {
-            const key = key.split("-");
+            const questionKey = key.split("-");
             console.log({
-              question: key[key.length - 1],
+              question: questionKey[questionKey.length - 1],
               option: request.body[key],
             });
             await Votes.createVote(
               request.body.electionId,
-              key[key.length - 1],
+              questionKey[questionKey.length - 1],
               request.body[key],
               request.body.voterId
             );
