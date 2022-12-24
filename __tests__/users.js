@@ -23,6 +23,17 @@ async function loginAsAdmin(agent, username, password) {
   });
 }
 
+async function loginAsVoter(agent, voterId, password, electionId) {
+  let res = await agent.get(`/public/${electionId}`);
+  let csrfToken = extractCsrfToken(res);
+  res = await agent.post(`/session/${electionId}/voter`).send({
+    voterId,
+    password,
+    electionId,
+    _csrf: csrfToken,
+  });
+}
+
 describe("User Test Suite", () => {
   beforeAll(async () => {
     await db.sequelize.sync({ forced: true });
@@ -443,5 +454,264 @@ describe("User Test Suite", () => {
     let latestCount = options.length;
 
     expect(latestCount).toBe(count - 1);
+  });
+
+  test("User A: Create voter1", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all voters to obtain count
+    let votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let count = JSON.parse(votersResponse.text).length;
+
+    // NOTE Create new voter
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    res = await agent.post(`/elections/${eid}/voters`).send({
+      voterId: "voter1",
+      password: "voter1",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all voters to obtain latest count
+    votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let latestCount = JSON.parse(votersResponse.text).length;
+
+    // NOTE Compare counts
+    expect(latestCount).toBe(count + 1);
+  });
+
+  test("User A: Create voter2", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all voters to obtain count
+    let votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let count = JSON.parse(votersResponse.text).length;
+
+    // NOTE Create new voter
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/voters`).send({
+      voterId: "voter2",
+      password: "voter2",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all voters to obtain latest count
+    votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let latestCount = JSON.parse(votersResponse.text).length;
+
+    // NOTE Compare counts
+    expect(latestCount).toBe(count + 1);
+  });
+
+  test("User A: Delete a voter", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Create new voter
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    await agent.post(`/elections/${eid}/voters`).send({
+      voterId: "voter3",
+      password: "voter3",
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all voters to obtain count
+    let votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let voters = JSON.parse(votersResponse.text);
+    let count = voters.length;
+    let vid = voters[voters.length - 1].id;
+
+    // NOTE Delete voter
+    res = await agent.get("/dashboard");
+    csrfToken = extractCsrfToken(res);
+    await agent.delete(`/elections/${eid}/voters/${vid}`).send({
+      _csrf: csrfToken,
+    });
+
+    // NOTE Fetch all voters to obtain latest count
+    votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let latestCount = JSON.parse(votersResponse.text).length;
+
+    // NOTE Compare counts
+    expect(latestCount).toBe(count - 1);
+  });
+
+  test("User A: Launch election", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Try to access public page before launching
+    electionsResponse = await agent.get(`/public/${eid}`);
+    expect(electionsResponse.statusCode).toBe(403);
+
+    // NOTE Launch election
+    let res = await agent.get("/dashboard");
+    let csrfToken = extractCsrfToken(res);
+    res = await agent.put(`/elections/${eid}`).send({
+      start: true,
+      _csrf: csrfToken,
+    });
+
+    res = await agent.get(`/elections/${eid}`);
+
+    // NOTE Try to access public page after launching
+    electionsResponse = await agent.get(`/public/${eid}`);
+    expect(electionsResponse.statusCode).toBe(200);
+  });
+
+  test("voter1: Vote", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all voters for given electionId
+    let votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let voters = JSON.parse(votersResponse.text);
+
+    // NOTE Fetch all questions for given electionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+
+    // NOTE Fetch all options for given questionId
+    let optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    let options = JSON.parse(optionsResponse.text);
+
+    // NOTE Signout as Admin
+    let res = await agent.get("/signout");
+    expect(res.statusCode).toBe(302);
+
+    // NOTE Login as Voter
+    const agent2 = request.agent(server);
+    res = await loginAsVoter(agent2, "voter1", "voter1", eid);
+    res = await agent2.get(`/public/${eid}/vote`);
+    let csrfToken = extractCsrfToken(res);
+    let sendRequest = {
+      electionId: eid,
+      voterId: voters[0].id,
+      _csrf: csrfToken,
+    };
+
+    sendRequest["question-" + questions[0].id] = options[0].id;
+    let voteResponse = await agent2
+      .post(`/public/${eid}/cast`)
+      .send(sendRequest);
+
+    expect(voteResponse.statusCode).toBe(200);
+  });
+
+  test("voter2: Vote", async () => {
+    // NOTE Login as Admin
+    const agent = request.agent(server);
+    await loginAsAdmin(agent, "user.a@test.com", "12345678");
+
+    // NOTE Fetch all elections to obtain electionId
+    let electionsResponse = await agent
+      .get("/elections")
+      .set("Accept", "application/json");
+    let elections = JSON.parse(electionsResponse.text);
+    let eid = elections[elections.length - 1].id;
+
+    // NOTE Fetch all voters for given electionId
+    let votersResponse = await agent
+      .get(`/elections/${eid}/voters`)
+      .set("Accept", "application/json");
+    let voters = JSON.parse(votersResponse.text);
+
+    // NOTE Fetch all questions for given electionId
+    let questionsResponse = await agent
+      .get(`/elections/${eid}/questions`)
+      .set("Accept", "application/json");
+    let questions = JSON.parse(questionsResponse.text);
+    let qid = questions[questions.length - 1].id;
+
+    // NOTE Fetch all options for given questionId
+    let optionsResponse = await agent
+      .get(`/elections/${eid}/questions/${qid}/options`)
+      .set("Accept", "application/json");
+    let options = JSON.parse(optionsResponse.text);
+
+    // NOTE Signout as Admin
+    let res = await agent.get("/signout");
+    expect(res.statusCode).toBe(302);
+
+    // NOTE Login as Voter
+    const agent2 = request.agent(server);
+    res = await loginAsVoter(agent2, "voter2", "voter2", eid);
+    res = await agent2.get(`/public/${eid}/vote`);
+    let csrfToken = extractCsrfToken(res);
+    let sendRequest = {
+      electionId: eid,
+      voterId: voters[0].id,
+      _csrf: csrfToken,
+    };
+
+    sendRequest["question-" + questions[0].id] = options[1].id;
+    let voteResponse = await agent2
+      .post(`/public/${eid}/cast`)
+      .send(sendRequest);
+
+    expect(voteResponse.statusCode).toBe(200);
   });
 });
