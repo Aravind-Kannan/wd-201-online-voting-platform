@@ -494,6 +494,33 @@ app.get(
   }
 );
 
+// NOTE [Questions] Questions endpoint to fetch all elections for given user
+app.get(
+  "/elections/:eid/questions",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    if (Object.getPrototypeOf(request.user) === Users.prototype) {
+      try {
+        const questions = await Questions.findAll({
+          where: {
+            electionId: request.params.eid,
+          },
+        });
+        return response.json(questions);
+      } catch (error) {
+        console.log(error);
+        return response.status(422).json(error);
+      }
+    } else {
+      return response.status(403).json({
+        status: "Forbidden",
+        message:
+          "Only authenticated administrators are authorized to access questions resource",
+      });
+    }
+  }
+);
+
 // NOTE [Questions] Questions endpoint to fetch a particular question
 app.get(
   "/elections/:eid/questions/:id",
