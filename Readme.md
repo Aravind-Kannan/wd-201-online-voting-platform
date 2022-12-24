@@ -17,16 +17,16 @@
 
 ## Screenshots
 
-![Sign up](docs/signup.png)
-![Sign in](docs/signin.png)
-![Dashboard](docs/dashboard.png)
-![Ballot 1](docs/ballot1.png)
-![Ballot 2](docs/ballot2.png)
-![Ballot 3](docs/ballot3.png)
-![Preview](docs/preview.png)
-![Ballot 4](docs/ballot4.png)
-![Result 1](docs/result1.png)
-![Voter](docs/voter.png)
-![Vote](docs/vote.png)
-![Acknowledgement](docs/acknowledgement.png)
-![Result 2](docs/result2.png)
+<img src="docs/signup.png" />
+<img src="docs/signin.png" />
+<img src="docs/dashboard.png" />
+<img src="docs/ballot1.png" />
+<img src="docs/ballot2.png" />
+<img src="docs/ballot3.png" />
+<img src="docs/preview.png" />
+<img src="docs/ballot4.png" />
+<img src="docs/result1.png" />
+<img src="docs/voter.png" />
+<img src="docs/vote.png" />
+<img src="docs/acknowledgement.png" />
+<img src="docs/result2.png" />
