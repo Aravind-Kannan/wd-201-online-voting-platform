@@ -364,7 +364,11 @@ app.put(
           request.flash("success", "Edited election name successfully");
         }
 
-        if ("start" in request.body) {
+        if (
+          "start" in request.body &&
+          election.start === false &&
+          request.body.start === true
+        ) {
           if (await election.hasInsufficientQuestions(request.params.id)) {
             request.flash(
               "error",
@@ -389,11 +393,7 @@ app.put(
             invalid = true;
           }
 
-          if (
-            !invalid &&
-            election.start === false &&
-            request.body.start === true
-          ) {
+          if (!invalid) {
             updatedElection = await election.updateStart(request.body.start);
             updated = true;
             request.flash("success", "Started election successfully");
